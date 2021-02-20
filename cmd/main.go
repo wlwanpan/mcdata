@@ -32,9 +32,6 @@ func main() {
 
 	switch {
 	case genCmd.Happened():
-		if err := mcdata.LoadDataPaths(); err != nil {
-			log.Fatal(p.Usage(err))
-		}
 		if err := mcdata.GenerateGoStructs(*e, *v, *o); err != nil {
 			log.Fatal(p.Usage(err))
 		}

@@ -2,6 +2,7 @@ package mcdata
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,6 +10,10 @@ import (
 
 	"github.com/ChimeraCoder/gojson"
 	"github.com/hashicorp/go-multierror"
+)
+
+var (
+	ErrVersionNotSupported = errors.New("version provided not supported")
 )
 
 const (
@@ -23,28 +28,49 @@ type dataPaths struct {
 	PE dataPath `json:"pe"`
 }
 
-var (
-	paths *dataPaths
-)
+func (dp *dataPaths) getEditionedPath(e string) dataPath {
+	if e == EditionPC {
+		return dp.PC
+	}
+	return dp.PE
+}
 
-func LoadDataPaths() error {
+func (dp *dataPaths) getVersionedPaths(e, v string) (map[string]string, bool) {
+	path := dp.getEditionedPath(e)
+	vp, exist := path[v]
+	return vp, exist
+}
+
+func (dp *dataPaths) getSupportedEditions(e string) []string {
+	path := dp.getEditionedPath(e)
+	editions := []string{}
+	for s := range path {
+		editions = append(editions, s)
+	}
+	return editions
+}
+
+func loadDataPaths() (*dataPaths, error) {
 	curDir, _ := os.Getwd()
 	pathsFile, err := os.Open(filepath.Join(curDir, "../minecraft-data/data/dataPaths.json"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	paths = &dataPaths{}
+	paths := &dataPaths{}
 	jsonParser := json.NewDecoder(pathsFile)
-	return jsonParser.Decode(paths)
+	err = jsonParser.Decode(paths)
+	return paths, err
 }
 
 func GenerateGoStructs(edition, version, dest string) error {
-	var versionedPath map[string]string
-	if edition == EditionPC {
-		versionedPath = paths.PC[version]
-	} else {
-		versionedPath = paths.PE[version]
+	dataPaths, err := loadDataPaths()
+	if err != nil {
+		return err
+	}
+	versionedPath, exist := dataPaths.getVersionedPaths(edition, version)
+	if !exist {
+		return ErrVersionNotSupported
 	}
 
 	curDir, _ := os.Getwd()
