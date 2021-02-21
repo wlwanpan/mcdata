@@ -3,7 +3,7 @@ package mcdata
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,9 +50,9 @@ func (dp *dataPaths) getSupportedEditions(e string) []string {
 	return editions
 }
 
-func loadDataPaths() (*dataPaths, error) {
+func loadDataPaths(mcdataPath string) (*dataPaths, error) {
 	curDir, _ := os.Getwd()
-	pathsFile, err := os.Open(filepath.Join(curDir, "../minecraft-data/data/dataPaths.json"))
+	pathsFile, err := os.Open(filepath.Join(curDir, mcdataPath, "dataPaths.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +63,13 @@ func loadDataPaths() (*dataPaths, error) {
 	return paths, err
 }
 
-func GenerateGoStructs(edition, version, dest string) error {
-	dataPaths, err := loadDataPaths()
+func packageNameFromPath(p string) string {
+	ps := strings.Split(p, "/")
+	return ps[len(ps)-1]
+}
+
+func GenerateGoStructs(mcdataPath, edition, version, dest string) error {
+	dataPaths, err := loadDataPaths(mcdataPath)
 	if err != nil {
 		return err
 	}
@@ -74,16 +79,20 @@ func GenerateGoStructs(edition, version, dest string) error {
 	}
 
 	curDir, _ := os.Getwd()
-	basepath := filepath.Join(curDir, "../minecraft-data/data")
+	basepath := filepath.Join(curDir, mcdataPath)
 	outpath := filepath.Join(curDir, dest)
-	if err := os.Mkdir(outpath, 0777); err != nil {
+	if err := os.MkdirAll(outpath, 0777); err != nil {
 		if !os.IsExist(err) {
 			return err
 		}
 	}
 
+	fmt.Printf("mcdata (%d) entities detected\n", len(versionedPath))
+
 	var res error
+	var counter int
 	for datatype, datapath := range versionedPath {
+		counter++
 		datafilepath := filepath.Join(basepath, datapath, datatype+".json")
 
 		datafile, err := os.Open(datafilepath)
@@ -96,14 +105,14 @@ func GenerateGoStructs(edition, version, dest string) error {
 		}
 
 		structName := strings.Title(datatype)
-		genfile, err := gojson.Generate(datafile, gojson.ParseJson, structName, dest, []string{"json"}, false, true)
+		packageName := packageNameFromPath(outpath)
+		genfile, err := gojson.Generate(datafile, gojson.ParseJson, structName, packageName, []string{"json"}, false, true)
 		if err != nil {
 			multierror.Append(res, err)
 			continue
 		}
 
 		structFile := filepath.Join(outpath, datatype+".go")
-		log.Printf("Generating file %s", structFile)
 		f, err := os.Create(structFile)
 		if err != nil {
 			multierror.Append(res, err)
@@ -114,6 +123,9 @@ func GenerateGoStructs(edition, version, dest string) error {
 		_, err = f.Write(genfile)
 		if err != nil {
 			multierror.Append(res, err)
+			fmt.Printf("Failed to generate entity: (%d) %s\n", counter, datatype)
+		} else {
+			fmt.Printf("Generated go struct for entity: (%d) %s\n", counter, datatype)
 		}
 	}
 

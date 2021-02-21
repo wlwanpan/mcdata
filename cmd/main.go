@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -32,11 +33,11 @@ func main() {
 
 	switch {
 	case genCmd.Happened():
-		if err := mcdata.GenerateGoStructs(*e, *v, *o); err != nil {
-			log.Fatal(p.Usage(err))
+		if err := mcdata.GenerateGoStructs("minecraft-data/data", *e, *v, *o); err != nil {
+			fmt.Println(p.Usage(err))
 		}
-		log.Println("Successfully generated Minecraft data structs!")
+		fmt.Println("Successfully generated Minecraft data structs!")
 	default:
-		log.Fatal(p.Usage(nil))
+		fmt.Println(p.Usage(nil))
 	}
 }
