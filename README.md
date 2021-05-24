@@ -49,7 +49,7 @@ type Effects []struct {
 }
 ```
 
-### load your pre-gen go struct
+### Load your pre-generated go struct
 ```go
 effects := &entities.Effects{}
 err := mcdata.LoadDataToStruct("pc", "1.8", "effects", effects)
