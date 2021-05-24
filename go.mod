@@ -1,6 +1,6 @@
 module github.com/wlwanpan/mcdata
 
-go 1.14
+go 1.16
 
 require (
 	github.com/ChimeraCoder/gojson v1.1.0
