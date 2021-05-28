@@ -33,7 +33,7 @@ func main() {
 
 	switch {
 	case genCmd.Happened():
-		if err := mcdata.GenerateGoStructs("minecraft-data/data", *e, *v, *o); err != nil {
+		if err := mcdata.GenerateStructs(*e, *v, *o); err != nil {
 			fmt.Println(p.Usage(err))
 		}
 		fmt.Println("Successfully generated Minecraft data structs!")

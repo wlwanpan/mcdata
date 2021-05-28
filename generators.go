@@ -1,7 +1,6 @@
 package mcdata
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -16,26 +15,13 @@ var (
 	ErrVersionNotSupported = errors.New("version provided not supported")
 )
 
-func loadDataPaths(mcdataPath string) (*dataPaths, error) {
-	curDir, _ := os.Getwd()
-	pathsFile, err := os.Open(filepath.Join(curDir, mcdataPath, "dataPaths.json"))
-	if err != nil {
-		return nil, err
-	}
-
-	paths := &dataPaths{}
-	jsonParser := json.NewDecoder(pathsFile)
-	err = jsonParser.Decode(paths)
-	return paths, err
-}
-
 func packageNameFromPath(p string) string {
 	ps := strings.Split(p, "/")
 	return ps[len(ps)-1]
 }
 
-func GenerateGoStructs(mcdataPath, edition, version, dest string) error {
-	dataPaths, err := loadDataPaths(mcdataPath)
+func GenerateStructs(edition, version, dest string) error {
+	dataPaths, err := LoadDataPaths()
 	if err != nil {
 		return err
 	}
@@ -45,7 +31,7 @@ func GenerateGoStructs(mcdataPath, edition, version, dest string) error {
 	}
 
 	curDir, _ := os.Getwd()
-	basepath := filepath.Join(curDir, mcdataPath)
+	basepath := filepath.Join(curDir, SubmoduleDataPath) // Refactor to read from embeded
 	outpath := filepath.Join(curDir, dest)
 	if err := os.MkdirAll(outpath, 0777); err != nil {
 		if !os.IsExist(err) {
